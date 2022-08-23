@@ -206,26 +206,70 @@ class NetworkModule(OpenStackModule):
         net = self.conn.get_network(name, filters=filters)
 
         if state == 'present':
-            if not net:
-                provider = {}
-                if provider_physical_network:
-                    provider['physical_network'] = provider_physical_network
-                if provider_network_type:
-                    provider['network_type'] = provider_network_type
-                if provider_segmentation_id:
-                    provider['segmentation_id'] = provider_segmentation_id
+            if provider_physical_network:
+                kwargs['provider_physical_network'] = provider_physical_network
+            if provider_network_type:
+                kwargs['provider_network_type'] = provider_network_type
+            if provider_segmentation_id:
+                kwargs['provider_segmentation_id'] = provider_segmentation_id
 
-                if project_id is not None:
-                    net = self.conn.create_network(name, shared, admin_state_up,
-                                                   external, provider, project_id,
-                                                   **kwargs)
-                else:
-                    net = self.conn.create_network(name, shared, admin_state_up,
-                                                   external, provider,
-                                                   **kwargs)
+            if project_id is not None:
+                kwargs['project_id'] = project_id
+
+            kwargs["shared"] = shared
+            kwargs["admin_state_up"] = admin_state_up
+            kwargs["is_router_external"] = external
+
+            if not net:
+                net = self.conn.network.create_network(name=name, **kwargs)
                 changed = True
             else:
                 changed = False
+                update_kwargs = {}
+
+                # Mappings from argument name to field in Network object.
+                argument_mappings = {
+                    "is_router_external": "router:external",
+                    # NOTE(wszumski): Segmentation ID can only updated on VLAN
+                    # networks: The error you get back is:
+                    # Invalid input for operation: Only VLAN type networks can be updated..
+                    "provider_segmentation_id": "provider:segmentation_id",
+                    "provider_network_type": "provider:network_type",
+                    "provider_physical_network": "provider:physical_network",
+                }
+
+                # Check we are not trying to update an properties that cannot be modified
+                non_updatables = [
+                    "provider_network_type",
+                    "provider_physical_network",
+                ]
+                for arg in non_updatables:
+                    net_property = argument_mappings.get(arg, arg)
+                    if arg in kwargs and kwargs[arg] != net[net_property]:
+                        self.fail_json(
+                            msg="The following parameters cannot be updated: "
+                                "%s. You will need to use state: absent and "
+                                "recreate." % ', '.join(non_updatables)
+                        )
+
+                # Filter args to update call to the ones that have been modifed
+                # and are updatable. Adapted from:
+                # https://github.com/openstack/openstacksdk/blob/1ce15c9a8758b4d978eb5239bae100ddc13c8875/openstack/cloud/_network.py#L559-L561
+                for arg in ["shared", "admin_state_up", "is_router_external",
+                            "mtu", "port_security_enabled", "dns_domain",
+                            "provider_segmentation_id"]:
+                    net_property = argument_mappings.get(arg, arg)
+                    if arg in kwargs and kwargs[arg] != net[net_property]:
+                        if kwargs[arg] != None:
+                            update_kwargs[arg] = kwargs[arg]
+
+                if update_kwargs:
+                    net = self.conn.network.update_network(
+                        net["id"], **update_kwargs
+                    )
+                    changed = True
+
+
             self.exit(changed=changed, network=net, id=net['id'])
 
         elif state == 'absent':

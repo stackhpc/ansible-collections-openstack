@@ -1,5 +1,6 @@
 network_name: shade_network
 network_name_newparams: newparams_network
+network_name_updates: update_network
 network_shared: false
 network_external: false
 dns_domain: example.opendev.org

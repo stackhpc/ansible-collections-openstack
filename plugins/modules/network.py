@@ -259,7 +259,7 @@ class NetworkModule(OpenStackModule):
                             "mtu", "port_security_enabled", "dns_domain",
                             "provider_segmentation_id"]:
                     net_property = argument_mappings.get(arg, arg)
-                    if arg in kwargs and kwargs[arg] != net[net_property]:
+                    if arg in kwargs and kwargs[arg] != net.get(net_property):
                         if kwargs[arg] != None:
                             update_kwargs[arg] = kwargs[arg]
 

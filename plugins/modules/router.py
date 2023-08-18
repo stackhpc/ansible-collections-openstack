@@ -616,8 +616,7 @@ class RouterModule(OpenStackModule):
         network = None
         if network_name_or_id:
             network = self.conn.network.find_network(network_name_or_id,
-                                                     ignore_missing=False,
-                                                     **query_filters)
+                                                     ignore_missing=False)
 
         # Validate and cache the subnet IDs so we can avoid duplicate checks
         # and expensive API calls.

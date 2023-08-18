@@ -113,6 +113,11 @@ options:
     choices: [present, absent]
     default: present
     type: str
+  stateful:
+    description:
+      - Should the resource be stateful or stateless.
+    default: None
+    type: bool
 extends_documentation_fragment:
   - openstack.cloud.openstack
 '''
@@ -201,6 +206,14 @@ EXAMPLES = r'''
     name: foo
     description: security group for foo servers
 
+- name: Create a stateless security group
+  openstack.cloud.security_group:
+    cloud: mordred
+    state: present
+    stateful: false
+    name: foo
+    description: stateless security group for foo servers
+
 - name: Update the existing 'foo' security group description
   openstack.cloud.security_group:
     cloud: mordred
@@ -260,6 +273,7 @@ class SecurityGroupModule(OpenStackModule):
             ),
         ),
         state=dict(default='present', choices=['absent', 'present']),
+        stateful=dict(type="bool"),
     )
 
     module_kwargs = dict(
@@ -405,7 +419,7 @@ class SecurityGroupModule(OpenStackModule):
 
     def _create(self):
         kwargs = dict((k, self.params[k])
-                      for k in ['description', 'name']
+                      for k in ['description', 'name', 'stateful']
                       if self.params[k] is not None)
 
         project_name_or_id = self.params['project']

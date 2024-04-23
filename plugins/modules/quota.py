@@ -20,6 +20,10 @@ options:
     backups:
         description: Maximum number of backups allowed.
         type: int
+    check_limit:
+        description: 
+          - Flag to check the network quota usage before setting the new limit.
+        type: bool
     cores:
         description: Maximum number of CPU's per project.
         type: int
@@ -37,6 +41,9 @@ options:
         type: int
     groups:
         description: Number of groups that are allowed for the project
+        type: int
+    health_monitors:
+        description: Maximum number of health monitors that can be created.
         type: int
     injected_file_content_bytes:
         description:
@@ -60,6 +67,12 @@ options:
         type: int
     key_pairs:
         description: Number of key pairs to allow.
+        type: int
+    l7_policies:
+        description: The maximum amount of L7 policies you can create.
+        type: int 
+    listeners:
+        description: The maximum number of listeners you can create.
         type: int
     load_balancers:
         description: The maximum amount of load balancers you can create
@@ -231,8 +244,23 @@ quotas:
             description: Network service quotas
             type: dict
             contains:
+                check_limit:
+                    description: Flag to check the quota usage before setting 
+                      the new limit.
+                    type: bool
                 floating_ips:
                     description: Number of floating IP's to allow.
+                    type: int
+                health_monitors:
+                    description: Maximum number of health monitors that can be 
+                      created.
+                    type: int
+                l7_policies:
+                    description: The maximum amount of L7 policies you can 
+                       create.
+                    type: int 
+                listeners:
+                    description: The maximum number of listeners you can create.
                     type: int
                 load_balancers:
                     description: The maximum amount of load balancers one can
@@ -312,6 +340,9 @@ quotas:
                 server_groups: 10,
             network:
                 floating_ips: 50,
+                health_monitors: 10,
+                l7_policies: 10,
+                listeners: 10,
                 load_balancers: 10,
                 networks: 10,
                 pools: 10,
@@ -337,12 +368,10 @@ from collections import defaultdict
 
 
 class QuotaModule(OpenStackModule):
-    # TODO: Add missing network quota options 'check_limit', 'health_monitors',
-    #       'l7_policies', 'listeners' to argument_spec, DOCUMENTATION and
-    #       RETURN docstrings
     argument_spec = dict(
         backup_gigabytes=dict(type='int'),
         backups=dict(type='int'),
+        check_limit=dict(type='bool'),
         cores=dict(type='int'),
         fixed_ips=dict(type='int'),
         floating_ips=dict(
@@ -350,6 +379,7 @@ class QuotaModule(OpenStackModule):
                                  'network_floating_ips']),
         gigabytes=dict(type='int'),
         groups=dict(type='int'),
+        health_monitors=dict(type='int'),
         injected_file_content_bytes=dict(type='int',
                                          aliases=['injected_file_size']),
         injected_file_path_bytes=dict(type='int',
@@ -357,6 +387,8 @@ class QuotaModule(OpenStackModule):
         injected_files=dict(type='int'),
         instances=dict(type='int'),
         key_pairs=dict(type='int', no_log=False),
+        l7_policies=dict(type='int'),
+        listeners=dict(type='int'),
         load_balancers=dict(type='int', aliases=['loadbalancer']),
         metadata_items=dict(type='int'),
         name=dict(required=True),

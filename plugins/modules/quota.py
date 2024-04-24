@@ -70,13 +70,14 @@ options:
         type: int
     l7_policies:
         description: The maximum amount of L7 policies you can create.
-        type: int 
+        type: int
     listeners:
         description: The maximum number of listeners you can create.
         type: int
     load_balancers:
         description: The maximum amount of load balancers you can create
         type: int
+        aliases: [loadbalancer]
     metadata_items:
        description: Number of metadata items allowed per instance.
        type: int
@@ -377,6 +378,8 @@ from collections import defaultdict
 
 
 class QuotaModule(OpenStackModule):
+    # TODO: Add missing network quota options 'check_limit', and 'l7_policies'
+    #       to argument_spec, DOCUMENTATION and RETURN docstrings
     argument_spec = dict(
         backup_gigabytes=dict(type='int'),
         backups=dict(type='int'),
@@ -398,7 +401,7 @@ class QuotaModule(OpenStackModule):
         key_pairs=dict(type='int', no_log=False),
         l7_policies=dict(type='int'),
         listeners=dict(type='int'),
-        load_balancers=dict(type='int'),
+        load_balancers=dict(type='int', aliases=['loadbalancer']),
         metadata_items=dict(type='int'),
         members=dict(type='int'),
         name=dict(required=True),

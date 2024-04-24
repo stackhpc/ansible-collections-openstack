@@ -77,7 +77,6 @@ options:
     load_balancers:
         description: The maximum amount of load balancers you can create
         type: int
-        aliases: [loadbalancer]
     metadata_items:
        description: Number of metadata items allowed per instance.
        type: int
@@ -256,20 +255,20 @@ quotas:
                        create.
                     type: int 
                 listeners:
-                    description: The maximum number of listeners you can create.
+                    description: The maximum number of listeners you can create
                     type: int
                 load_balancers:
                     description: The maximum amount of load balancers one can
                                  create
                     type: int
-                    aliases: [loadbalancer]
                 members:
-                    description: The maximum amount of members for loadbalancers.
+                    description: The maximum amount of members for
+                      loadbalancer.
                     type: int
                 pools:
                     description: The maximum amount of pools one can create.
                     type: int
- 
+
         network:
             description: Network service quotas
             type: dict
@@ -366,10 +365,10 @@ quotas:
                 volumes: 10,
             load_balancer:
                 health_monitors: 10,
-                load_balancer: 10,
+                load_balancers: 10,
                 l7_policies: 10,
                 listeners: 10,
-                pool: 5,
+                pools: 5,
                 members: 5,
 '''
 
@@ -399,7 +398,7 @@ class QuotaModule(OpenStackModule):
         key_pairs=dict(type='int', no_log=False),
         l7_policies=dict(type='int'),
         listeners=dict(type='int'),
-        load_balancers=dict(type='int', aliases=['loadbalancer']),
+        load_balancers=dict(type='int'),
         metadata_items=dict(type='int'),
         members=dict(type='int'),
         name=dict(required=True),
@@ -443,12 +442,12 @@ class QuotaModule(OpenStackModule):
         'load_balancer': {'name'},
         'network': {
              'name',
-             'l7_policies',
-             'load_balancers', # Available only via load_balancer
+             'l7_policies', # Advertised but non-functional
+             'load_balancers', # Advertised but non-functional
+             'loadbalancer', # Advertised but non-functional
              'health_monitors', # Available only via load_balancer
              'pools', # Available only via load_balancer
              'listeners', # Available only via load_balancer
-             'listener',
         },
         'volume': {'name'},
     }
@@ -461,18 +460,18 @@ class QuotaModule(OpenStackModule):
             self.warn('Block storage service aka volume service is not'
                       ' supported by your cloud. Ignoring volume quotas.')
 
-        if self.conn.has_service('load_balancer'): # There is currently no has_service('load_balancer')
-            quota['load_balancer'] = self.conn.load_balancer.get_quota(project.id)
+        if self.conn.has_service('load-balancer'):
+            quota['load_balancer'] = self.conn.load_balancer.get_quota(
+              project.id)
         else:
-            self.warn('Loadbalancer service does not support detection. Trying anyway')
-            quota['load_balancer'] = self.conn.load_balancer.get_quota(project.id)
+            self.warn('Loadbalancer service is not supported by your'
+                      ' cloud. Ignoring loadbalancer quotas.')
 
         if self.conn.has_service('network'):
             quota['network'] = self.conn.network.get_quota(project.id)
         else:
             self.warn('Network service is not supported by your cloud.'
                       ' Ignoring network quotas.')
-
         quota['compute'] = self.conn.compute.get_quota_set(project.id)
 
         return quota
@@ -527,7 +526,6 @@ class QuotaModule(OpenStackModule):
                 self.conn.block_storage.revert_quota_set(project)
             if 'load_balancer' in quotas:
                 self.conn.load_balancer.delete_quota(project.id)
-    
 
             # Necessary since we can't tell what the default quotas are
             quotas = self._get_quotas(project)
@@ -546,7 +544,9 @@ class QuotaModule(OpenStackModule):
                     quotas['network'] = self.conn.network.update_quota(
                         project.id, **changes['network'])
                 if 'load_balancer' in changes:
-                    quotas['load_balancer'] = self.conn.load_balancer.update_quota(project.id, **changes['load_balancer'])
+                    quotas['load_balancer'] = \
+                       self.conn.load_balancer.update_quota(
+                           project.id, **changes['load_balancer'])
                 changed = True
 
         quotas = {k: v.to_dict(computed=False) for k, v in quotas.items()}

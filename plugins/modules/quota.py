@@ -399,7 +399,7 @@ class QuotaModule(OpenStackModule):
         key_pairs=dict(type='int', no_log=False),
         l7_policies=dict(type='int'),
         listeners=dict(type='int'),
-        load_balancers=dict(type='int'), aliases=['loadbalancer']),
+        load_balancers=dict(type='int', aliases=['loadbalancer']),
         metadata_items=dict(type='int'),
         members=dict(type='int'),
         name=dict(required=True),
@@ -472,6 +472,7 @@ class QuotaModule(OpenStackModule):
         else:
             self.warn('Network service is not supported by your cloud.'
                       ' Ignoring network quotas.')
+
         quota['compute'] = self.conn.compute.get_quota_set(project.id)
 
         return quota

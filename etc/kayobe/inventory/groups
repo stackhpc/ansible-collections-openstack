@@ -97,10 +97,14 @@ infra-vms
 ansible-control
 
 ###############################################################################
-# Baremetal compute node groups.
+# Baremetal node groups.
 
 [baremetal-compute]
 # Empty group to provide declaration of baremetal-compute group.
+
+[baremetal:children]
+baremetal-compute
+overcloud
 
 ###############################################################################
 # Networking groups.

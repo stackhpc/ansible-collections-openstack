@@ -2213,13 +2213,24 @@ class NetworkConnectivityCheck(KayobeAnsibleMixin, VaultMixin, Command):
 
 
 class BaremetalComputeRegister(KayobeAnsibleMixin, VaultMixin, Command):
-    """Register baremetal compute nodes in Ironic."""
+    """Register baremetal compute nodes in Ironic.
+
+    Deprecated: Legacy command for backwards compatibility with existing
+    deployments.
+    """
 
     def take_action(self, parsed_args):
         self.app.LOG.debug("Register baremetal compute nodes in Ironic.")
-        playbooks = _build_playbook_list("baremetal-compute-register")
+        playbooks = _build_playbook_list("baremetal-node-register")
         self.run_kayobe_playbooks(parsed_args, playbooks)
 
+class BaremetalNodeRegister(KayobeAnsibleMixin, VaultMixin, Command):
+    """Register baremetal nodes in Ironic."""
+
+    def take_action(self, parsed_args):
+        self.app.LOG.debug("Register baremetal nodes in Ironic.")
+        playbooks = _build_playbook_list("baremetal-node-register")
+        self.run_kayobe_playbooks(parsed_args, playbooks)
 
 class BaremetalComputeInspect(KayobeAnsibleMixin, VaultMixin, Command):
     """Perform hardware inspection on baremetal compute nodes."""

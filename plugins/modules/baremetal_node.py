@@ -65,6 +65,7 @@ options:
     name:
       description:
         - unique name identifier to be given to the resource.
+        - node ID takes precedence over the node name.
       type: str
     network_interface:
       description:
@@ -75,14 +76,13 @@ options:
       description:
         - 'A list of network interface cards, eg, C( - mac: aa:bb:cc:aa:bb:cc)'
         - This node attribute cannot be updated.
-      required: true
+        - nics are required when the node provision state is available.
       type: list
       elements: dict
       suboptions:
         mac:
             description: The MAC address of the network interface card.
             type: str
-            required: true
     power_interface:
       description:
         - The interface used to manage power actions on this node, e.g.
@@ -125,6 +125,12 @@ options:
             - For allowed hints refer to
               U(https://docs.openstack.org/ironic/latest/install/advanced.html).
           type: dict
+    make_available_on_node_create:
+      description:
+        - Indicates the baremetal node should be moved to available state when enrolled.
+        - If the baremetal node already exists the state will not be altered.
+      default: true
+      type: str
     raid_interface:
       description:
         - Interface used for configuring raid on this node.
@@ -504,7 +510,7 @@ class BaremetalNodeModule(OpenStackModule):
         management_interface=dict(),
         name=dict(),
         network_interface=dict(),
-        nics=dict(type='list', required=True, elements='dict'),
+        nics=dict(type='list', elements='dict'),
         power_interface=dict(),
         properties=dict(
             type='dict',
@@ -517,6 +523,7 @@ class BaremetalNodeModule(OpenStackModule):
                 root_device=dict(type='dict'),
             ),
         ),
+        make_available_on_node_create=dict(default=True, type='bool'),
         raid_interface=dict(),
         rescue_interface=dict(),
         resource_class=dict(),
@@ -651,6 +658,7 @@ class BaremetalNodeModule(OpenStackModule):
             nics=self.params['nics'],
             wait=self.params['wait'],
             timeout=self.params['timeout'],
+            provision_state='available' if self.params.get('make_available_on_node_create') else 'enroll',
             **kwargs)
 
         self.exit_json(changed=True, node=node.to_dict(computed=False))
